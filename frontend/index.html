@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>KDP Chatbot</title>
+<style>
+  #chatButton {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #4f46e5; color: white; border: none;
+    border-radius: 50%; width: 60px; height: 60px;
+    font-size: 28px; cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
+  #chatContainer {
+    position: fixed; bottom: 90px; right: 20px;
+    width: 350px; height: 500px; background: white;
+    border-radius: 12px; display: none; flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  #chatHeader {
+    background: #4f46e5; color: white;
+    padding: 10px; display: flex; justify-content: space-between;
+    align-items: center; font-weight: bold;
+  }
+  #chatMessages {
+    flex: 1; padding: 10px; overflow-y: auto; font-family: sans-serif;
+  }
+  #chatInput {
+    display: flex; border-top: 1px solid #ccc;
+  }
+  #chatInput input {
+    flex: 1; border: none; padding: 10px;
+  }
+  #chatInput button {
+    background: #4f46e5; color: white; border: none; padding: 10px 15px;
+  }
+  #leadForm {
+    padding: 10px; display: none;
+    flex-direction: column; gap: 8px;
+  }
+  #leadForm input, #leadForm button {
+    padding: 8px;
+  }
+</style>
+</head>
+<body>
+
+<button id="chatButton">💬</button>
+
+<div id="chatContainer">
+  <div id="chatHeader">
+    KDP Assistant
+    <button id="closeChat" style="background:none;border:none;color:white;font-size:18px;">✖</button>
+  </div>
+  <div id="chatMessages"></div>
+
+  <!-- Lead Form -->
+  <div id="leadForm">
+    <input type="text" id="leadName" placeholder="Your Name">
+    <input type="email" id="leadEmail" placeholder="Email (optional)">
+    <input type="tel" id="leadPhone" placeholder="Phone (optional)">
+    <button id="submitLead">Submit</button>
+  </div>
+
+  <div id="chatInput">
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendMessage">Send</button>
+  </div>
+</div>
+
+<script>
+  const backendURL = "http://127.0.0.1:5000";
+
+
+  const chatButton = document.getElementById("chatButton");
+  const chatContainer = document.getElementById("chatContainer");
+  const closeChat = document.getElementById("closeChat");
+  const sendMessage = document.getElementById("sendMessage");
+  const messageInput = document.getElementById("messageInput");
+  const chatMessages = document.getElementById("chatMessages");
+
+  const leadForm = document.getElementById("leadForm");
+  const submitLead = document.getElementById("submitLead");
+
+  let lastUserQuery = "";
+
+  chatButton.onclick = () => {
+    chatContainer.style.display = "flex";
+    chatButton.style.display = "none";
+  };
+  closeChat.onclick = () => {
+    chatContainer.style.display = "none";
+    chatButton.style.display = "block";
+  };
+
+  sendMessage.onclick = async () => {
+    const question = messageInput.value.trim();
+    if (!question) return;
+
+    lastUserQuery = question;
+    appendMessage("You", question);
+    messageInput.value = "";
+
+    const res = await fetch(`${backendURL}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+
+    if (data.lead_required) {
+      appendMessage("Bot", data.message);
+      leadForm.style.display = "flex";
+      document.getElementById("chatInput").style.display = "none";
+    } else {
+      appendMessage("Bot", data.answer || "Sorry, something went wrong.");
+    }
+  };
+
+  submitLead.onclick = async () => {
+    const name = document.getElementById("leadName").value.trim();
+    const email = document.getElementById("leadEmail").value.trim();
+    const phone = document.getElementById("leadPhone").value.trim();
+
+    const res = await fetch(`${backendURL}/lead`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone, query: lastUserQuery })
+    });
+    const data = await res.json();
+
+    if (data.message) {
+      appendMessage("Bot", "Thanks! We'll be in touch soon.");
+      leadForm.style.display = "none";
+      document.getElementById("chatInput").style.display = "flex";
+    } else if (data.errors) {
+      alert(data.errors.join("\n"));
+    }
+  };
+
+  function appendMessage(sender, text) {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
