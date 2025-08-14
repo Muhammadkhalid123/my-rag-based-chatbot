@@ -1,151 +1,515 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>KDP Chatbot</title>
-<style>
-  #chatButton {
-    position: fixed; bottom: 20px; right: 20px;
-    background: #4f46e5; color: white; border: none;
-    border-radius: 50%; width: 60px; height: 60px;
-    font-size: 28px; cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  }
-  #chatContainer {
-    position: fixed; bottom: 90px; right: 20px;
-    width: 350px; height: 500px; background: white;
-    border-radius: 12px; display: none; flex-direction: column;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    overflow: hidden;
-  }
-  #chatHeader {
-    background: #4f46e5; color: white;
-    padding: 10px; display: flex; justify-content: space-between;
-    align-items: center; font-weight: bold;
-  }
-  #chatMessages {
-    flex: 1; padding: 10px; overflow-y: auto; font-family: sans-serif;
-  }
-  #chatInput {
-    display: flex; border-top: 1px solid #ccc;
-  }
-  #chatInput input {
-    flex: 1; border: none; padding: 10px;
-  }
-  #chatInput button {
-    background: #4f46e5; color: white; border: none; padding: 10px 15px;
-  }
-  #leadForm {
-    padding: 10px; display: none;
-    flex-direction: column; gap: 8px;
-  }
-  #leadForm input, #leadForm button {
-    padding: 8px;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDP Chat Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            width: 100%;
+            max-width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-header h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .chat-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            text-align: right;
+        }
+        
+        .user-message .bubble {
+            background: #667eea;
+            color: white;
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .bot-message .bubble {
+            background: white;
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 18px 18px 18px 4px;
+            max-width: 80%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+        }
+        
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .chat-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        .lead-form {
+            padding: 20px;
+            background: white;
+            display: none;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .lead-form.active {
+            display: block;
+        }
+        
+        .lead-form h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .lead-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .lead-form input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        .lead-form input.error {
+            border-color: #e74c3c;
+            background-color: #fdf2f2;
+        }
+        
+        .lead-form button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .lead-form button:hover {
+            background: #5a67d8;
+        }
+        
+        .lead-form button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px 20px;
+        }
+        
+        .typing-indicator.active {
+            display: block;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
 </head>
 <body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>KDP Publishing Assistant</h2>
+            <p>We're here to help with your publishing journey</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="bubble">
+                    Hello! Welcome to KDP Digital Publishers. How can I help you with your publishing journey today?
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        
+        <div class="lead-form" id="leadForm">
+            <h3>Let's Get Started!</h3>
+            <div id="errorMessages"></div>
+            <input type="text" id="leadName" placeholder="Your Full Name *" required>
+            <input type="email" id="leadEmail" placeholder="Email Address *" required>
+            <input type="tel" id="leadPhone" placeholder="Phone Number">
+            <input type="text" id="leadBestTime" placeholder="Best time to contact (optional)">
+            <button onclick="submitLead()" id="submitBtn">Submit Information</button>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                * Required fields. We'll contact you within 24 hours.
+            </p>
+        </div>
+        
+        <div class="chat-input-container" id="chatInputContainer">
+            <input 
+                type="text" 
+                class="chat-input" 
+                id="chatInput" 
+                placeholder="Type your message..."
+                onkeypress="handleKeyPress(event)"
+            >
+        </div>
+    </div>
 
-<button id="chatButton">💬</button>
-
-<div id="chatContainer">
-  <div id="chatHeader">
-    KDP Assistant
-    <button id="closeChat" style="background:none;border:none;color:white;font-size:18px;">✖</button>
-  </div>
-  <div id="chatMessages"></div>
-
-  <!-- Lead Form -->
-  <div id="leadForm">
-    <input type="text" id="leadName" placeholder="Your Name">
-    <input type="email" id="leadEmail" placeholder="Email (optional)">
-    <input type="tel" id="leadPhone" placeholder="Phone (optional)">
-    <button id="submitLead">Submit</button>
-  </div>
-
-  <div id="chatInput">
-    <input type="text" id="messageInput" placeholder="Type a message...">
-    <button id="sendMessage">Send</button>
-  </div>
-</div>
-
-<script>
-  const backendURL = "http://127.0.0.1:5000";
-
-
-  const chatButton = document.getElementById("chatButton");
-  const chatContainer = document.getElementById("chatContainer");
-  const closeChat = document.getElementById("closeChat");
-  const sendMessage = document.getElementById("sendMessage");
-  const messageInput = document.getElementById("messageInput");
-  const chatMessages = document.getElementById("chatMessages");
-
-  const leadForm = document.getElementById("leadForm");
-  const submitLead = document.getElementById("submitLead");
-
-  let lastUserQuery = "";
-
-  chatButton.onclick = () => {
-    chatContainer.style.display = "flex";
-    chatButton.style.display = "none";
-  };
-  closeChat.onclick = () => {
-    chatContainer.style.display = "none";
-    chatButton.style.display = "block";
-  };
-
-  sendMessage.onclick = async () => {
-    const question = messageInput.value.trim();
-    if (!question) return;
-
-    lastUserQuery = question;
-    appendMessage("You", question);
-    messageInput.value = "";
-
-    const res = await fetch(`${backendURL}/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question })
-    });
-    const data = await res.json();
-
-    if (data.lead_required) {
-      appendMessage("Bot", data.message);
-      leadForm.style.display = "flex";
-      document.getElementById("chatInput").style.display = "none";
-    } else {
-      appendMessage("Bot", data.answer || "Sorry, something went wrong.");
-    }
-  };
-
-  submitLead.onclick = async () => {
-    const name = document.getElementById("leadName").value.trim();
-    const email = document.getElementById("leadEmail").value.trim();
-    const phone = document.getElementById("leadPhone").value.trim();
-
-    const res = await fetch(`${backendURL}/lead`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, phone, query: lastUserQuery })
-    });
-    const data = await res.json();
-
-    if (data.message) {
-      appendMessage("Bot", "Thanks! We'll be in touch soon.");
-      leadForm.style.display = "none";
-      document.getElementById("chatInput").style.display = "flex";
-    } else if (data.errors) {
-      alert(data.errors.join("\n"));
-    }
-  };
-
-  function appendMessage(sender, text) {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-</script>
-
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: 'http://localhost:5000', // Change this to your backend URL
+            SESSION_STORAGE_KEY: 'kdp_session_id'
+        };
+        
+        // Generate or retrieve session ID
+        let sessionId = localStorage.getItem(CONFIG.SESSION_STORAGE_KEY);
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem(CONFIG.SESSION_STORAGE_KEY, sessionId);
+        }
+        
+        let awaitingLead = false;
+        let isSubmitting = false;
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message || isSubmitting) return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: message,
+                        session_id: sessionId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                hideTypingIndicator();
+                
+                // Handle the response
+                if (data.answer && data.answer !== 'undefined') {
+                    addMessage(data.answer, 'bot');
+                }
+                
+                // Check if lead form should be shown
+                if (data.lead_required === true) {
+                    showLeadForm();
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error connecting to our server. Please try again or refresh the page.', 'bot');
+            }
+        }
+        
+        function addMessage(text, sender) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'bubble';
+            
+            // Preserve line breaks and format text
+            bubbleDiv.innerHTML = text.replace(/\n/g, '<br>');
+            
+            messageDiv.appendChild(bubbleDiv);
+            messagesDiv.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('active');
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('active');
+        }
+        
+        function showLeadForm() {
+            document.getElementById('leadForm').classList.add('active');
+            document.getElementById('chatInputContainer').style.display = 'none';
+            awaitingLead = true;
+            
+            // Focus on the first input
+            setTimeout(() => {
+                document.getElementById('leadName').focus();
+            }, 100);
+        }
+        
+        function hideLeadForm() {
+            document.getElementById('leadForm').classList.remove('active');
+            document.getElementById('chatInputContainer').style.display = 'block';
+            awaitingLead = false;
+            clearErrors();
+        }
+        
+        function clearErrors() {
+            const errorDiv = document.getElementById('errorMessages');
+            errorDiv.innerHTML = '';
+            
+            // Remove error classes from inputs
+            const inputs = document.querySelectorAll('.lead-form input');
+            inputs.forEach(input => input.classList.remove('error'));
+        }
+        
+        function showErrors(errors) {
+            const errorDiv = document.getElementById('errorMessages');
+            errorDiv.innerHTML = '<div class="error-message">' + errors.join('<br>') + '</div>';
+            
+            // Add error class to inputs with issues
+            errors.forEach(error => {
+                if (error.includes('name')) {
+                    document.getElementById('leadName').classList.add('error');
+                }
+                if (error.includes('email') || error.includes('contact')) {
+                    document.getElementById('leadEmail').classList.add('error');
+                    document.getElementById('leadPhone').classList.add('error');
+                }
+            });
+        }
+        
+        function validateForm() {
+            const name = document.getElementById('leadName').value.trim();
+            const email = document.getElementById('leadEmail').value.trim();
+            const phone = document.getElementById('leadPhone').value.trim();
+            
+            const errors = [];
+            
+            if (!name || name.length < 2) {
+                errors.push('Please enter your full name (minimum 2 characters)');
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const emailValid = email && emailRegex.test(email);
+            
+            // Phone validation - at least 6 digits
+            const phoneDigits = phone.replace(/[^0-9]/g, '');
+            const phoneValid = phoneDigits.length >= 6;
+            
+            if (!emailValid && !phoneValid) {
+                errors.push('Please provide at least one valid contact method (email or phone number)');
+            }
+            
+            return errors;
+        }
+        
+        async function submitLead() {
+            if (isSubmitting) return;
+            
+            clearErrors();
+            
+            const errors = validateForm();
+            if (errors.length > 0) {
+                showErrors(errors);
+                return;
+            }
+            
+            const name = document.getElementById('leadName').value.trim();
+            const email = document.getElementById('leadEmail').value.trim();
+            const phone = document.getElementById('leadPhone').value.trim();
+            const bestTime = document.getElementById('leadBestTime').value.trim();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            isSubmitting = true;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/lead`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        phone: phone,
+                        best_time: bestTime,
+                        query: 'Publishing inquiry from chat',
+                        session_id: sessionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    const successMessage = data.message + '\n\n' + data.next_steps;
+                    addMessage(successMessage, 'bot');
+                    
+                    // Hide form and clear fields
+                    hideLeadForm();
+                    clearForm();
+                    
+                    // Show a success message in the form area briefly
+                    const errorDiv = document.getElementById('errorMessages');
+                    errorDiv.innerHTML = '<div class="success-message">Thank you! Your information has been submitted successfully.</div>';
+                    
+                } else if (data.errors) {
+                    showErrors(data.errors);
+                }
+                
+            } catch (error) {
+                console.error('Error submitting lead:', error);
+                showErrors(['Failed to submit. Please check your connection and try again.']);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Information';
+                isSubmitting = false;
+            }
+        }
+        
+        function clearForm() {
+            document.getElementById('leadName').value = '';
+            document.getElementById('leadEmail').value = '';
+            document.getElementById('leadPhone').value = '';
+            document.getElementById('leadBestTime').value = '';
+        }
+        
+        // Initialize the chat
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('chatInput').focus();
+        });
+    </script>
 </body>
 </html>
